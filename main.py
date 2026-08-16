@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from scraper import consultar_multas_cordoba
+from aiohttp import web
+from scraper import consultar_multas_cordoba
 
 # Cargar variables de entorno (Token)
 load_dotenv()
@@ -71,8 +73,25 @@ async def check_patente_handler(message: types.Message) -> None:
     # Editar el mensaje de "espera" con el resultado final
     await wait_msg.edit_text(respuesta_final, parse_mode="Markdown")
 
+async def handle_ping(request):
+    return web.Response(text="Bot is running!")
+
+async def init_web_server():
+    app = web.Application()
+    app.router.add_get('/', handle_ping)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    # Render usa la variable PORT, si no está, usamos 8080
+    port = int(os.getenv("PORT", 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    print(f"Servidor web de salud iniciado en el puerto {port}")
+
 async def main() -> None:
-    # Iniciar polling
+    # Iniciar el servidor web dummy para pasar los checks de Render
+    await init_web_server()
+    
+    # Iniciar polling del bot
     print("Bot iniciado. Esperando mensajes...")
     await dp.start_polling(bot)
 
